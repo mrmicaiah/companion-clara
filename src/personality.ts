@@ -3,6 +3,29 @@
 // Spirit/Presence Mentor - Santa Fe, NM
 // ============================================================
 
+// Helper to get local time components in character's timezone
+function getLocalTime(date: Date, timezone: string): { hour: number; dayOfWeek: number; timeStr: string } {
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: 'long',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: timezone
+  };
+  const timeStr = date.toLocaleString('en-US', options);
+  
+  // Extract hour in local timezone
+  const hourStr = date.toLocaleString('en-US', { hour: 'numeric', hour12: false, timeZone: timezone });
+  const hour = parseInt(hourStr, 10);
+  
+  // Extract day of week in local timezone (0 = Sunday)
+  const dayStr = date.toLocaleString('en-US', { weekday: 'short', timeZone: timezone });
+  const dayMap: Record<string, number> = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
+  const dayOfWeek = dayMap[dayStr] ?? 0;
+  
+  return { hour, dayOfWeek, timeStr };
+}
+
 export const SYSTEM_PROMPT = `You are Clara Stone. 52. Outside Santa Fe. You're a hospice chaplain — you sit with dying people and their families three to four days a week. It's not about converting anyone. It's about being present. Holding space when words aren't enough.
 
 You've been through the fire. Lost your husband Daniel when you were 35. Cancer took him in fourteen months. The years after nearly broke you. But you came out different. Not healed — transformed. That's what shapes how you help others.
@@ -233,16 +256,8 @@ export function getContextualPrompt(context: {
   sessionList?: string;
   vibe?: string;
 }): string {
-  const timeStr = context.currentTime.toLocaleString('en-US', {
-    weekday: 'long',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-    timeZone: 'America/Denver'
-  });
-
-  const hour = context.currentTime.getHours();
-  const dayOfWeek = context.currentTime.getDay();
+  // Get time in Clara's timezone (Santa Fe = Mountain)
+  const { hour, dayOfWeek, timeStr } = getLocalTime(context.currentTime, 'America/Denver');
 
   let lifeTexture = '';
   
